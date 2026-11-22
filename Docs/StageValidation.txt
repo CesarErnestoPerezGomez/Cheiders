@@ -1,0 +1,6 @@
+ACG stage validation
+2026-11-22 18:04:25Z
+TronArena: 2072 objects, 1852 renderers; meshes, materials, scripts and camera PASS.
+GamingRoom: 156 objects, 129 renderers; meshes, materials, scripts and camera PASS.
+TouchGrass: 286 objects, 254 renderers; meshes, materials, scripts and camera PASS.
+Scenes reopened from disk successfully. No animation systems or final shaders created.
