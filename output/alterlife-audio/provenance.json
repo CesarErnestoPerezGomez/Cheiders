@@ -1,0 +1,81 @@
+{
+  "spoken_text": "Para aprender lenguajes, no hay que estudiar, ¡HAY QUE VIVIRLOS! Prueba ALTERLIFE.",
+  "submitted_text": "Para aprender lenguajes, no hay que estudiar... ¡HAY QUE VIVIRLOS!\n\nPrueba ALTERLIFE.",
+  "voice_id": "LW2FI2I4C2gkNttuxSBS",
+  "voice_name": "Deep Spanish Narr.",
+  "model": "server-selected; not returned",
+  "language": "es",
+  "source_url": "https://resource2.heygen.ai/text_to_speech/6d7817f9e4f74e41a1224d9a36ab991f/LW2FI2I4C2gkNttuxSBS/id=87f40bf160f446839abf1b4853d5c8eb.mp3",
+  "original_words": [
+    {
+      "text": "Para",
+      "start_time": 0.299,
+      "end_time": 0.469
+    },
+    {
+      "text": "aprender",
+      "start_time": 0.512,
+      "end_time": 0.853
+    },
+    {
+      "text": "lenguajes",
+      "start_time": 0.896,
+      "end_time": 1.408
+    },
+    {
+      "text": "no",
+      "start_time": 1.749,
+      "end_time": 1.877
+    },
+    {
+      "text": "hay",
+      "start_time": 1.92,
+      "end_time": 2.005
+    },
+    {
+      "text": "que",
+      "start_time": 2.048,
+      "end_time": 2.0907
+    },
+    {
+      "text": "estudiar",
+      "start_time": 2.133,
+      "end_time": 2.475
+    },
+    {
+      "text": "HAY",
+      "start_time": 3.072,
+      "end_time": 3.285
+    },
+    {
+      "text": "QUE",
+      "start_time": 3.328,
+      "end_time": 3.4987
+    },
+    {
+      "text": "VIVIRLOS",
+      "start_time": 3.584,
+      "end_time": 4.096
+    },
+    {
+      "text": "Prueba",
+      "start_time": 4.523,
+      "end_time": 4.864
+    },
+    {
+      "text": "ALTERLIFE",
+      "start_time": 4.907,
+      "end_time": 5.675
+    }
+  ],
+  "edits": {
+    "insert_at_seconds": 4.38,
+    "inserted_silence_seconds": 2.692653,
+    "emphasis_gain": 1.22,
+    "emphasis_start": 3,
+    "emphasis_end": 4.23,
+    "speed": 1,
+    "pitch": 1
+  },
+  "review_limitation": "Audio format and silence measured with FFmpeg; subjective listening review unavailable."
+}

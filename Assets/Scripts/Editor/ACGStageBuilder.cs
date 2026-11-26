@@ -251,8 +251,15 @@ namespace ACG.Editor
         {
             var sky=new Color(.008f,.018f,.035f); Begin(sky,new Color(.17f,.23f,.32f),true);
             var arena=Group("01 - Arena - clear race area 90 x 120 m");
-            Box("Dark racing surface",arena,new Vector3(0,-.3f,0),new Vector3(110,.6f,140),Material("Tron/ArenaFloor_Slot",new Color(.025f,.04f,.065f),.15f,.55f));
-            var grid=Group("Geometric floor light grid",arena);
+            var glassFloor = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials for Shader/Transparent Floor.mat");
+            Box("Glass racing surface",arena,new Vector3(0,-.3f,0),new Vector3(110,.6f,140),glassFloor).GetComponent<Renderer>().sortingOrder = -2;
+            Box("Track foundation",arena,new Vector3(0,-4.3f,0),new Vector3(110,.6f,140),Material("Tron/ArenaFloor_Slot",new Color(.025f,.04f,.065f),.15f,.55f));
+            var overpass=Group("Glass overpass",arena);
+            overpass.gameObject.AddComponent<GlassOverpass>();
+            var deckRenderer = overpass.GetComponent<MeshRenderer>();
+            deckRenderer.sharedMaterial = glassFloor;
+            deckRenderer.sortingOrder = -1;
+            var grid=Group("Geometric floor light grid",arena,new Vector3(0,-2.5f,0));
             var gridMat=Material("Tron/Grid_DimCyan",new Color(.01f,.10f,.13f),0,.4f,Cyan*.6f);
             for(int x=-50;x<=50;x+=10) Box("Longitudinal grid "+x,grid,new Vector3(x,.009f,0),new Vector3(.035f,.016f,136),gridMat);
             for(int z=-70;z<=70;z+=10) Box("Transverse grid "+z,grid,new Vector3(0,.01f,z),new Vector3(106,.018f,.035f),gridMat);
@@ -443,7 +450,7 @@ namespace ACG.Editor
         static void BuildGarden()
         {
             var sky=new Color(.57f,.76f,.85f); Begin(sky,new Color(.65f,.7f,.57f));
-            var ground=Group("01 - Grass ground"); Box("Lawn - grass shader slot",ground,new Vector3(0,-.3f,0),new Vector3(32,.6f,30),grass);
+            var ground=Group("01 - Grass ground"); Box("Lawn - grass shader slot",ground,new Vector3(0,-.3f,0),new Vector3(4096,.6f,4096),grass);
             var path=Group("02 - Clear walking path"); var sand=Material("Nature/Path",new Color(.62f,.48f,.29f),0,.15f);
             // Wide continuous path from entry to the reachable front face of the trunk.
             Box("Walkway",path,new Vector3(0,.017f,-5.5f),new Vector3(2.6f,.035f,14),sand);
