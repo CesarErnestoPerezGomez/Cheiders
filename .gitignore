@@ -136,3 +136,8 @@ crashlytics-build.properties
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# Archivos pesados de NeonVR
+/NeonVR/NeonVR.mp4
+/NeonVR.zip
+/output/NeonVR.mp4

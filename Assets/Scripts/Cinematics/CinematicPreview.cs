@@ -3,13 +3,14 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 
 namespace ACG
 {
-    public class CinematicPreview : MonoBehaviour
+    public partial class CinematicPreview : MonoBehaviour
     {
         readonly List<Material> temporaryMaterials = new List<Material>();
         AudioSource music, effects;
@@ -53,6 +54,8 @@ namespace ACG
             Hide("04 - Motorcycles - static staging");
             Hide("05 - Energy walls - static placeholders");
             var riders = new List<Transform>();
+            var grid = new List<Vector3>();
+            var trails = new List<TrailRenderer>();
             for (int team = 0; team < 2; team++)
                 for (int i = 0; i < 5; i++)
                 {
@@ -60,50 +63,70 @@ namespace ACG
                     Transform bike = Spawn("Tron/Lightbike_" + color).transform;
                     // Reserve the center for the duel and spread each supporting pack outwards.
                     float lane = (team == 0 ? -1 : 1) * (10 + i * 7);
-                    bike.position = new Vector3(lane, 0, -60 - i * 1.5f);
+                    grid.Add(new Vector3(lane, 0, -60 - i * 1.5f));
+                    int slot = riders.Count;
+                    Vector3 start = CircuitPosition(slot, 0);
+                    bike.SetPositionAndRotation(start, Quaternion.LookRotation(CircuitPosition(slot, .02f) - start));
                     var rider = Spawn("Characters/Zomboony_" + color + "_Staging").transform;
                     rider.SetParent(bike, false);
                     rider.localPosition = new Vector3(0, .8f, 0);
                     rider.localScale *= .7f;
                     riders.Add(bike);
-                    var trail = bike.gameObject.AddComponent<TrailRenderer>();
-                    trail.time = 18; trail.startWidth = 2; trail.endWidth = 2;
+                    var emitter = new GameObject("Rear light ribbon").transform;
+                    emitter.SetParent(bike, false);
+                    emitter.localPosition = new Vector3(0, .95f, -1.8f);
+                    var trail = emitter.gameObject.AddComponent<TrailRenderer>();
+                    trails.Add(trail);
+                    trail.time = 2.6f; trail.startWidth = 1.75f; trail.endWidth = 1.35f;
                     trail.minVertexDistance = .3f;
                     trail.material = Material("ACG/CinematicSurface", team == 0 ? new Color(1,.18f,.02f, .8f) : new Color(.02f,.7f,1,.8f), 1);
                     trail.emitting = false;
                 }
             Transform hero = riders[0];
-            Shot(new Vector3(1, 8, -45), new Vector3(1, 1, -62));
+            scoreboard = new RaceScoreboard(arcadeFont);
             Music("EpicBattleSong", .95f);
             Sound("MotorcycleStart", .45f);
             yield return Animate(3, t => {
                 float sweep = Mathf.SmoothStep(0, 1, t);
-                Shot(Vector3.Lerp(new Vector3(1, 18, -22), new Vector3(-2, 3, -48), sweep),
-                    Vector3.Lerp(new Vector3(5, 1, -62), hero.position + Vector3.up, sweep));
+                Shot(hero.TransformPoint(Vector3.Lerp(new Vector3(11, 14, -24), new Vector3(-4, 2, 6), sweep)),
+                    Vector3.Lerp(riders[2].position, hero.position, sweep) + Vector3.up);
             });
             Sound("SonidoMoto", .38f);
-            foreach (var bike in riders) bike.GetComponent<TrailRenderer>().emitting = true;
+            foreach (var trail in trails) trail.emitting = true;
+            yield return RunCircuit(riders, trails);
+            // Match cut to the final straight. Begin a new trail strip in the new shot.
+            for (int i = 0; i < riders.Count; i++)
+            {
+                if (!riders[i].gameObject.activeSelf) continue;
+                trails[i].emitting = false;
+                Vector3 p = RacePosition(grid[i], i, SprintEntry);
+                riders[i].SetPositionAndRotation(p, Quaternion.LookRotation(RacePosition(grid[i], i, SprintEntry + .01f) - p));
+                trails[i].Clear();
+                trails[i].emitting = true;
+            }
             var glass = GameObject.CreatePrimitive(PrimitiveType.Quad);
             glass.name = "Voronoi impact panel";
             glass.transform.position = new Vector3(-10, 2, -6);
             glass.transform.localScale = new Vector3(7, 4, 1);
             var glassMaterial = Material("ACG/CinematicSurface", new Color(.25f,.85f,1,.25f), 0);
             glass.GetComponent<Renderer>().material = glassMaterial;
-            var grid = riders.ConvertAll(bike => bike.position);
-            const float raceDuration = 6.6f;
+            const float raceDuration = 6.43f;
             const float glassTime = 3.6f;
             const float overpassIn = 1.25f, overpassOut = 3.18f, extraShotTime = 3f;
             bool hitGlass = false;
             bool heardPass = false;
             shotCamera.fieldOfView = 72;
-            yield return Animate(raceDuration + extraShotTime, progress => {
-                float screenTime = progress * (raceDuration + extraShotTime);
+            float sprintDuration = raceDuration + extraShotTime - SprintEntry;
+            yield return Animate(sprintDuration, progress => {
+                float screenTime = SprintEntry + progress * sprintDuration;
+                scoreboard.Seconds = CircuitDuration + progress * sprintDuration;
                 // Stretch only the elevated pass. The glass hit and final duel keep their timing.
                 float inset = Mathf.InverseLerp(overpassIn, overpassOut + extraShotTime, screenTime);
                 float seconds = screenTime - extraShotTime * inset;
                 for (int i = 0; i < riders.Count; i++)
                 {
                     Transform bike = riders[i];
+                    if (!bike.gameObject.activeSelf) continue;
                     Vector3 position = RacePosition(grid[i], i, seconds);
                     Vector3 heading = RacePosition(grid[i], i, seconds + .01f) - position;
                     Vector3 nextHeading = RacePosition(grid[i], i, seconds + .09f) -
@@ -179,22 +202,17 @@ namespace ACG
             yield return new WaitForSeconds(.35f);
             Sound("MuerteEnTron");
             var dissolve = Material("ACG/CinematicSurface", new Color(.32f,.74f,1,1), 2);
-            foreach (var renderer in hero.GetComponentsInChildren<Renderer>())
-            {
-                if (renderer is TrailRenderer) continue;
-                var slots = renderer.sharedMaterials;
-                for (int i = 0; i < slots.Length; i++) slots[i] = dissolve;
-                renderer.sharedMaterials = slots;
-            }
+            ApplyDissolve(hero, dissolve);
             yield return Animate(2.8f, t => {
                 dissolve.SetFloat("_Progress", Mathf.SmoothStep(0, 1, t));
                 Shot(Vector3.Lerp(close, subject + new Vector3(-4.7f,1.3f,-2), t), subject);
             });
-            hero.gameObject.SetActive(false); Sound("Aplausos");
+            hero.gameObject.SetActive(false); scoreboard.LoseOrange(); Sound("Aplausos");
             yield return new WaitForSeconds(.7f);
             shotCamera.fieldOfView = 70;
             Shot(eye, eye + hero.forward * 8);
             defeatTint = .46f;
+            scoreboard = null;
             music.Stop(); Sound("GameOver"); gameOver = true;
             yield return new WaitForSeconds(3);
             gameOver = false;
@@ -206,7 +224,7 @@ namespace ACG
             Hide("VR_Headset - independent prop");
             var headset = Spawn("GamingRoom/VR_Headset").transform;
             headset.position = actor.position + new Vector3(0,1.5f,-.2f);
-            Shot(actor.position + new Vector3(2,2,-3), actor.position + Vector3.up);
+            Shot(actor.position + new Vector3(-.7f, 1.6f, -2.4f), actor.position + Vector3.up * 1.05f);
             Sound("AngryScream");
             Vector3 visorStart = headset.position;
             yield return Animate(2, t => {
@@ -223,7 +241,7 @@ namespace ACG
             yield return Animate(4, t => {
                 actor.position = Vector3.Lerp(roomStart,new Vector3(5.5f,0,0),t);
                 actor.rotation = Quaternion.Euler(0,90,Mathf.Sin(t*30)*2);
-                Shot(new Vector3(0,2,-4),actor.position+Vector3.up);
+                Shot(new Vector3(-.35f, 1.9f, -3.2f), actor.position + Vector3.up);
             });
             yield return Load("TouchGrass");
             actor = Spawn("Characters/Zomboony_Neutral_Staging").transform;
@@ -283,6 +301,12 @@ namespace ACG
             foreach (var camera in FindObjectsByType<Camera>(FindObjectsSortMode.None)) camera.enabled = false;
             foreach (var listener in FindObjectsByType<AudioListener>(FindObjectsSortMode.None)) listener.enabled = false;
             shotCamera = new GameObject("Cinematic camera").AddComponent<Camera>();
+            if (name == "TronArena")
+            {
+                var cameraData = shotCamera.GetUniversalAdditionalCameraData();
+                cameraData.renderPostProcessing = true;
+                cameraData.antialiasing = AntialiasingMode.FastApproximateAntialiasing;
+            }
             shotCamera.clearFlags = RenderSettings.skybox ? CameraClearFlags.Skybox : CameraClearFlags.SolidColor;
             shotCamera.gameObject.AddComponent<AudioListener>();
             shotCamera.fieldOfView = 55;
@@ -312,6 +336,7 @@ namespace ACG
         }
         void OnGUI()
         {
+            scoreboard?.Draw();
             if (defeatTint > 0)
             {
                 Color original = GUI.color;
